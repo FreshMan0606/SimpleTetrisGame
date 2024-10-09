@@ -1,11 +1,9 @@
-#include <sfml\Graphics.hpp>
+ï»¿#include <sfml\Graphics.hpp>
 #include <vector>
 #include <ctime>
 #include <cstdlib>
 #include <map>
 #include <sfml\Audio.hpp>
-#include <imgui.h>
-#include <imgui-sfml.h>
 
 int main() {
 	srand(time(0));
@@ -257,9 +255,6 @@ int main() {
 	sf::Vector2i pos(origin);
 
 	sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "TetrisGame");
-	if (!ImGui::SFML::Init(window)) {
-		return EXIT_FAILURE;
-	}
 
 
 	sf::SoundBuffer bufferPutdown;
@@ -274,7 +269,7 @@ int main() {
 		return EXIT_FAILURE;
 	}
 	sf::Sound Bombsound(buffer);
-	
+
 	sf::Music music;
 	if (!music.openFromFile("spacetravel.wav")) {
 		return EXIT_FAILURE;
@@ -289,7 +284,7 @@ int main() {
 	bool RightLeft_move = true;
 
 	while (window.isOpen()) {
-
+		NextType = Type(rand() % 7 + 1);
 		currentShape = shapes[currentType][currentIndex];
 		currentSprite = sprites[currentType];
 
@@ -304,16 +299,14 @@ int main() {
 			SPEED_UP
 		};
 		Action action = Action::Hold;
-		
+
 		sf::Event event;
 		while (window.pollEvent(event)) {
-
-			ImGui::SFML::ProcessEvent(event);
 
 			if (event.type == sf::Event::Closed) {
 				window.close();
 			}
-			
+
 			if (event.type == sf::Event::KeyPressed) {
 
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
@@ -334,36 +327,36 @@ int main() {
 				case sf::Keyboard::Up:
 					action = Action::Rotate;
 					break;
-				case sf::Keyboard::LShift:
+				case sf::Keyboard::S:
 					action = Action::SWITCH;
 					break;
 				case sf::Keyboard::Down:
 					action = Action::SPEED_UP;
 					break;
 				}
-				
+
 			}
 		}
 
-		if (action == Action::SWITCH && change == 0) {
-			currentType = Type(rand() % 7 + 1);
+		if (action == Action::SWITCH && currentType != NextType) {
+			currentType = NextType;
 			pos = origin;
 			RightLeft_move = true;
-			change++;
+			currentIndex = 0;
 		}
 
 		if (clock.getElapsedTime().asSeconds() >= 0.3f) {
 			action = Action::MoveDown;
 			clock.restart();
 		}
-		
+
 		sf::Vector2i nextPos(pos);
 		int nextIndex = currentIndex;
 		if (action == Action::Rotate && RightLeft_move) {
 			nextIndex = (nextIndex + 1) % shapes[currentType].size();
 		}
 
-		std::vector<sf::Vector2i> nextShape = shapes[currentType][nextIndex];	
+		std::vector<sf::Vector2i> nextShape = shapes[currentType][nextIndex];
 		switch (action) {
 		case Action::Hold:
 			break;
@@ -380,10 +373,10 @@ int main() {
 			nextPos.y++;
 			break;
 		case Action::SPACE: {
-			
+
 			while (true) {
 				sf::Vector2i tempPos = nextPos;
-				tempPos.y++; // ±Ny®y¼Ð¼W¥[1¡A¹Á¸Õ©¹¤U²¾°Ê
+				tempPos.y++; // ï¿½Nyï¿½yï¿½Ð¼Wï¿½[1ï¿½Aï¿½ï¿½ï¿½Õ©ï¿½ï¿½Uï¿½ï¿½ï¿½ï¿½
 
 				int countEmpty = 0;
 				for (const auto& d : currentShape) {
@@ -396,35 +389,35 @@ int main() {
 				}
 
 				if (countEmpty == currentShape.size()) {
-					nextPos = tempPos; // ¦pªG¥i¥H©¹¤U²¾¡A´N§ó·s¦ì¸m
+					nextPos = tempPos; // ï¿½pï¿½Gï¿½iï¿½Hï¿½ï¿½ï¿½Uï¿½ï¿½ï¿½Aï¿½Nï¿½ï¿½sï¿½ï¿½m
 				}
 				else {
-					break; // ¦pªG¤£¯à©¹¤U²¾¡A°h¥X´`Àô
+					break; // ï¿½pï¿½Gï¿½ï¿½ï¿½à©¹ï¿½Uï¿½ï¿½ï¿½Aï¿½hï¿½Xï¿½`ï¿½ï¿½
 				}
 			}
 			RightLeft_move = false;
 			change = 0;
 			break;
 		}
-			
-			
+
+
 		}
 
 		int countEmpty = 0;
-		for(const auto& d : nextShape) {
+		for (const auto& d : nextShape) {
 			sf::Vector2i np = nextPos + d;
-			if (np.x >= 0 && np.x < fieldWidth && 
-				np.y < fieldHeight && 
+			if (np.x >= 0 && np.x < fieldWidth &&
+				np.y < fieldHeight &&
 				(np.y < 0 || field[np.x][np.y] == Type::None)) {
 				countEmpty++;
 			}
 		}
-		
+
 		if (countEmpty == 4) {
 			pos = nextPos;
 			currentIndex = nextIndex;
 			currentShape = nextShape;
-			
+
 		}
 		else {
 			if (action == Action::MoveDown) {
@@ -457,14 +450,14 @@ int main() {
 						}
 					}
 				}
-				
+
 				pos = origin;
 				currentType = Type(rand() % 7 + 1);
 				currentIndex = 0;
 				RightLeft_move = true;
 			}
 		}
-		
+
 		window.clear(sf::Color(190, 190, 190));
 
 		window.draw(backGroundSprite);
@@ -473,17 +466,17 @@ int main() {
 			for (int x = 0; x < fieldWidth; ++x) {
 				if (field[x][y] == Type::None) continue;
 				sf::Sprite& s = sprites[field[x][y]];
-				s.setPosition(float(x* blockWidth), float(y* blockHeight));
+				s.setPosition(float(x * blockWidth), float(y * blockHeight));
 				window.draw(s);
 			}
 		}
 
 		for (const auto& d : currentShape) {
 			sf::Vector2i np = pos + d;
-			currentSprite.setPosition(float(np.x* blockWidth), float(np.y* blockHeight));
+			currentSprite.setPosition(float(np.x * blockWidth), float(np.y * blockHeight));
 			window.draw(currentSprite);
 		}
-		
+
 		window.display();
 	}
 
